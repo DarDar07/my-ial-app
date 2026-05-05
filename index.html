@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IAL Study Hub</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f0f1a;
+    color: white;
+}
+
+/* HEADER */
+.header {
+    text-align: center;
+    padding: 18px;
+    background: linear-gradient(135deg, #6a11cb, #2575fc);
+}
+
+/* HOME */
+.grid {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 210px;
+    padding: 22px;
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    background: #1c1c2e;
+    box-shadow: 0 0 18px rgba(100,100,255,0.2);
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+/* SUBJECT COLORS */
+.wma { border-top: 5px solid #9b59b6; }
+.wph { border-top: 5px solid #ff4d4d; }
+.wch { border-top: 5px solid #2ecc71; }
+
+/* PAGE */
+.page {
+    display: none;
+    padding: 18px;
+}
+
+.back {
+    color: #7aa2ff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* BUTTON */
+.paper-btn {
+    padding: 12px;
+    margin: 6px;
+    border-radius: 10px;
+    border: none;
+    background: #4e54c8;
+    color: white;
+    cursor: pointer;
+}
+
+/* YEAR CARD */
+.year-card {
+    background: #1b1b2f;
+    margin: 12px 0;
+    padding: 14px;
+    border-radius: 14px;
+}
+
+/* SESSION */
+.session {
+    background: #121225;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+}
+
+/* TOGGLE */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 26px;
+}
+
+.switch input { display:none; }
+
+.slider {
+    position: absolute;
+    top:0; left:0; right:0; bottom:0;
+    background: #444;
+    border-radius: 26px;
+}
+
+.slider:before {
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background: #00ff99;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* NOTES */
+textarea {
+    width: 100%;
+    height: 60px;
+    margin-top: 8px;
+    border-radius: 10px;
+    border: none;
+    padding: 8px;
+    background: #0f0f1a;
+    color: white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h1>📚 IAL Study Hub</h1>
+</div>
+
+<div id="home" class="grid">
+    <div class="card wma" onclick="openSubject('WMA')">
+        <h2>WMA</h2>
+    </div>
+    <div class="card wph" onclick="openSubject('WPH')">
+        <h2>WPH</h2>
+    </div>
+    <div class="card wch" onclick="openSubject('WCH')">
+        <h2>WCH</h2>
+    </div>
+</div>
+
+<div id="subjectPage" class="page">
+    <div class="back" onclick="goHome()">← Home</div>
+    <h2 id="subjectTitle"></h2>
+    <div id="paperList"></div>
+</div>
+
+<div id="paperPage" class="page">
+    <div class="back" onclick="backToSubject()">← Back</div>
+    <h2 id="paperTitle"></h2>
+    <div id="yearList"></div>
+</div>
+
+<script>
+
+const subjects = {
+    WMA: { name: "Pure Mathematics", papers: ["P1","P2","P3","P4","M1","M2"] },
+    WPH: { papers: ["P1","P2","P3","P4","P5","P6"] },
+    WCH: { papers: ["P1","P2","P3","P4","P5","P6"] }
+};
+
+const sessions = ["Jan","June","Oct"];
+const years = Array.from({length: 9}, (_, i) => 2018 + i);
+
+let data = JSON.parse(localStorage.getItem("ial_app")) || {done:{}, notes:{}};
+
+function save() {
+    localStorage.setItem("ial_app", JSON.stringify(data));
+}
+
+let currentSubject = "";
+let currentPaper = "";
+
+function openSubject(code) {
+    currentSubject = code;
+    home.style.display = "none";
+    subjectPage.style.display = "block";
+    subjectTitle.innerText = code;
+
+    paperList.innerHTML = "";
+    subjects[code].papers.forEach(p => {
+        let btn = document.createElement("button");
+        btn.className = "paper-btn";
+        btn.innerText = p;
+        btn.onclick = () => openPaper(p);
+        paperList.appendChild(btn);
+    });
+}
+
+function openPaper(paper) {
+    currentPaper = paper;
+    subjectPage.style.display = "none";
+    paperPage.style.display = "block";
+    paperTitle.innerText = currentSubject + " " + paper;
+
+    yearList.innerHTML = "";
+
+    years.forEach(y => {
+        let div = document.createElement("div");
+        div.className = "year-card";
+
+        let html = `<b>${y}</b>`;
+
+        sessions.forEach(s => {
+            let key = `${currentSubject}-${y}-${s}-${paper}`;
+
+            html += `
+            <div class="session">
+                ${s}
+                <label class="switch">
+                    <input type="checkbox" ${data.done[key] ? "checked":""}
+                    onchange="data.done['${key}']=this.checked;save()">
+                    <span class="slider"></span>
+                </label>
+
+                <textarea oninput="data.notes['${key}']=this.value;save()">${data.notes[key]||""}</textarea>
+            </div>`;
+        });
+
+        div.innerHTML = html;
+        yearList.appendChild(div);
+    });
+}
+
+function goHome(){
+    home.style.display="flex";
+    subjectPage.style.display="none";
+    paperPage.style.display="none";
+}
+
+function backToSubject(){
+    paperPage.style.display="none";
+    subjectPage.style.display="block";
+}
+
+/* SERVICE WORKER */
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+}
+
+</script>
+
+</body>
+</html>

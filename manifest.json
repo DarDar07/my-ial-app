@@ -1,0 +1,8 @@
+{
+  "name": "IAL Study Hub",
+  "short_name": "IAL Hub",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#6a11cb"
+}
